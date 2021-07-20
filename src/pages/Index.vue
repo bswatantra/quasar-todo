@@ -1,9 +1,16 @@
+/* eslint-disable no-mixed-spaces-and-tabs */
+/* eslint-disable no-tabs */
 <template>
 <q-page padding>
 <div class="q-pb-md">
-<q-input class="q-pt-md" outlined v-model="title" label="Title" />
-<q-input class="q-pt-md q-pb-md" outlined v-model="content" label="Content" />
-<q-btn color="primary" label="Submit" />
+<form name="todo_form" @submit.prevent="add_todo" id="todoForm">
+<q-input class="q-pt-md" name="title" outlined v-model="title" label="Title" />
+<q-input class="q-pt-md q-pb-md" name="content" outlined v-model="content" label="Content" />
+<q-btn color="primary" type="submit" label="Submit" />
+<p v-for="error in errors" :key="error" color="text-primary">
+{{ error }}
+</p>
+</form>
 <q-spinner class="q-pt-md"
       v-if="loading"
       color="primary"
@@ -16,7 +23,8 @@
         <q-badge color="secondary">
            {{ posts.length - index }}
         </q-badge>
-        {{ post.data.title }}
+        {{ post.title }}
+        <!-- {{ post.content }} -->
       </div>
   </div>
   </q-page>
@@ -26,28 +34,41 @@ import axios from 'axios'
 export default {
   name: 'PageIndex',
   created () {
-    axios.get('https://www.reddit.com/r/aww.json?raw_json=1')
-      .then(response => {
-        this.loading = false
-        this.posts = response.data.data.children
-      })
-      .catch(error => {
-        this.loading = false
-        console.log(error)
-      })
+    this.getAllTodos()
   },
   data () {
     return {
-      showImageDialog: false,
-      imageUrl: '',
       loading: true,
-      posts: []
+      posts: [],
+      errors: [],
+      title: '',
+      content: ''
     }
   },
   methods: {
-    showImage (image) {
-      this.showImageDialog = true
-      this.imageUrl = image
+    add_todo () {
+      const formData = new FormData(document.getElementById('todoForm'))
+      axios.post('http://todos.test/api/todo', formData)
+        .then(response => {
+          this.getAllTodos()
+        })
+        .catch(error => {
+          if (error.response.status === 422) {
+            this.errors = error.response.data.errors
+          }
+        })
+    },
+    getAllTodos () {
+      axios.get('http://todos.test/api/todo')
+        .then(response => {
+          this.loading = false
+          this.posts = response.data
+        // console.log(response.data)
+        })
+        .catch(error => {
+          this.loading = false
+          console.log(error)
+        })
     }
   }
 }
