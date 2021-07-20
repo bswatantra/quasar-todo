@@ -1,13 +1,11 @@
-/* eslint-disable no-mixed-spaces-and-tabs */
-/* eslint-disable no-tabs */
 <template>
 <q-page padding>
 <div class="q-pb-md">
-<form name="todo_form" @submit.prevent="add_todo" id="todoForm">
-<q-input class="q-pt-md" name="title" outlined v-model="title" label="Title" />
-<q-input class="q-pt-md q-pb-md" name="content" outlined v-model="content" label="Content" />
-<q-btn color="primary" type="submit" label="Submit" />
-<p v-for="error in errors" :key="error" color="text-primary">
+<form name="todo_form" @submit.prevent="add_todo()" id="todoForm">
+<q-input class="q-pt-md title" name="title" outlined v-model="title" label="Title" />
+<q-input class="q-pt-md q-pb-md content" name="content" outlined v-model="content" label="Content" />
+<q-btn  v-if="isValid" color="primary" type="submit" label="Submit" />
+<p v-for="error in errors" :key="error" class="text-red-10 q-pt-md">
 {{ error }}
 </p>
 </form>
@@ -18,14 +16,18 @@
     />
 </div>
 <h4>Todo List</h4>
-<div class="q-pa-md scroll" style="height: 300px">
-      <div  v-for="(post, index) in posts" :key="index" class="q-mb-sm">
+<div class="q-pa-md scroll" style="height: 550px">
+      <div  v-for="(todo, index) in todos" :key="index" class="q-mb-sm">
         <q-badge color="secondary">
-           {{ posts.length - index }}
+           {{ todos.length - index }}
         </q-badge>
-        {{ post.title }}
-        <!-- {{ post.content }} -->
-      </div>
+        {{ todo.title }}
+        <p>{{todo.content}}</p>
+<div>
+<q-btn class="q-ml-md" color="red" label="Delete" @click="deleteTodo(todo)" />
+<q-btn class="q-ml-md" color="primary" label="Edit" @click="editTodo(todo)" />
+</div>
+</div>
   </div>
   </q-page>
 </template>
@@ -39,10 +41,11 @@ export default {
   data () {
     return {
       loading: true,
-      posts: [],
+      todos: [],
       errors: [],
       title: '',
-      content: ''
+      content: '',
+      button: 'Submit'
     }
   },
   methods: {
@@ -62,13 +65,53 @@ export default {
       axios.get('http://todos.test/api/todo')
         .then(response => {
           this.loading = false
-          this.posts = response.data
+          this.todos = response.data
         // console.log(response.data)
         })
         .catch(error => {
           this.loading = false
           console.log(error)
         })
+    },
+    deleteTodo (todo) {
+      console.log(todo.id)
+      axios.delete(`http://todos.test/api/todo/${todo.id}`)
+        .then(response => {
+          console.log(response)
+          if (response.data === 'ok') {
+            const index = this.todos.findIndex(item => item.id === todo.id)
+            this.todos.splice(index, 1)
+          }
+        })
+        .catch(error => {
+          this.loading = false
+          console.log(error)
+        })
+    },
+    editTodo (todo) {
+      this.title = todo.title
+      this.content = todo.content
+    },
+    updateTodo (todo) {
+      console.log(todo.id)
+      axios.patch(`http://todos.test/api/todo/${todo.id}`)
+        .then(response => {
+          console.log(response)
+          if (response.data === 'ok') {
+            const index = this.todos.findIndex(item => item.id === todo.id)
+            this.todos.splice(index, 1)
+          }
+        })
+        .catch(error => {
+          this.loading = false
+          console.log(error)
+        })
+    }
+  },
+  computed: {
+    isValid () {
+      console.log(this.title)
+      return this.title !== '' && this.content !== ''
     }
   }
 }
